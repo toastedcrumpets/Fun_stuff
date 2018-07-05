@@ -22,14 +22,19 @@ const unsigned int SCREEN_HEIGHT = 48;
 
 class Vector {
 public:
-  Vector() {}
+  Vector(const Vector& v) {
+    for (int i(0); i < 2; ++i)
+      *this[i] = v.data[i];
+  }
   Vector(double X, double Y) {
-    x = X;
-    y = Y;
+    data[0] = X;
+    data[1] = Y;
   }
   Vector operator*(double scaleup) const;
   Vector NormalizeVector() const; //Create unit vector
   double Length() const; //Find length of a vector
+  double& operator[](size_t idx) { return data[idx]; }
+  double operator[](size_t idx) const { return data[idx]; }
   Vector operator+(const Vector& vec) const; //add 2 vectors
   Vector operator-(const Vector& vec) const; //subtract 2 vectors
   double operator*(const Vector& vec) const; //Dot Product of two vectors
@@ -38,13 +43,22 @@ public:
   Vector CreateTangetVector() const; //Create a perpendicular vector
 
 public:
-  double x, y;
+  double data[2];
 };
 
 
 
 class Entity {
 public:
+  Entity(const Vector& pos, const Vector& vel, int r, double m):
+    Velocity(vel),
+    Position(pos),
+    Acceleration(0,0),
+    radius(r),
+    mass(m)
+  {
+  
+  }
   Vector Velocity, Acceleration;
   Vector Position; //Removed the point class as it is the exact same as the vector class (x,y)
   int radius;
@@ -72,33 +86,30 @@ public:
 };
 
 Vector Vector::operator*(double scaleup) const {
-  Vector NewVector;
-
-  NewVector.x = x * scaleup;
-  NewVector.y = y * scaleup;
-
+  Vector NewVector(*this);
+  for (int i(0); i < 2; ++i)
+    NewVector[i] *= scaleup;
+  
   return NewVector;
 }
 
 Vector Vector::NormalizeVector() const {
-  Vector UnitVector;
-  UnitVector.x = x / Length();
-  UnitVector.y = y / Length();
-  return UnitVector;
+  Vector retv(*this);
+    for (int i(0); i < 2; ++i)
+    retv[i] /= Length();
+  return retv;
 }
 
 double Vector::Length() const {
-  float length = sqrt(x * x + y * y);
-  return length;
+  return sqrt((*this) * (*this));
 }
 
 Vector Vector::operator+(const Vector& vec) const {
-  Vector NewVec;
+  Vector NewVec(*this);
+    for (int i(0); i < 2; ++i)
+      NewVec[i] += vec[i]
 
-  NewVec.x = x + vec.x;
-  NewVec.y = y + vec.y;
-
-  return NewVec;
+     return NewVec;
 }
 
 Vector Vector::operator-(const Vector& vec) const {
@@ -118,6 +129,7 @@ double Vector::operator*(const Vector& vec) const {
   return DotProduct;
 }
 
+//Replace this with (veca - vecb).length()
 double Vector::DistanceBetweenCenters(Vector TargetBallPosition) const {
   double distance;
   distance = sqrt((this->x - TargetBallPosition.x) * (this->x - TargetBallPosition.x) + (this->y - TargetBallPosition.y) * (this->y - TargetBallPosition.y));
@@ -209,8 +221,7 @@ void loop() {
 
 
   for (int n = 0; n < NumOfBalls; n++) {
-    for (int m = 0; m < NumOfBalls; m++) {
-      if (n != m && n != mCollided && m != nCollided) { //Make sure the ball does not collide with it self. Also prevent collision detection happening again for the same balls
+    for (int m = n+1; m < NumOfBalls; m++) {
         if (Ball[n].Position.DistanceBetweenCenters(Ball[m].Position) <= (Ball[n].radius + Ball[m].radius)) {
           //Check if balls have collided
           
